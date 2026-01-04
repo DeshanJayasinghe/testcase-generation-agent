@@ -163,8 +163,17 @@ function parseTypeScriptParameters(params: string): Parameter[] {
 /**
  * Main function to parse code file and extract metadata
  */
-export async function parseCodeMetadata(filePath: string): Promise<CodeMetadata> {
-  const content = await fs.readFile(filePath, 'utf-8');
+export async function parseCodeMetadata(filePath: string, fileContent?: string): Promise<CodeMetadata> {
+  let content: string;
+  
+  if (fileContent) {
+    // Use provided content (from cloud storage)
+    content = fileContent;
+  } else {
+    // Read from filesystem (local files)
+    content = await fs.readFile(filePath, 'utf-8');
+  }
+  
   const ext = path.extname(filePath);
 
   if (ext === '.java') {

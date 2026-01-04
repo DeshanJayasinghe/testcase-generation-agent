@@ -6,12 +6,13 @@ import { initAzureChatModel } from '../config/initChatModel.js';
  */
 export async function generateJUnitTests(
   metadata: CodeMetadata,
-  requirements?: Requirement[]
+  requirements?: Requirement[],
+  fileContent?: string
 ): Promise<TestCase[]> {
   const testCases: TestCase[] = [];
 
   for (const func of metadata.functions) {
-    const testCode = await generateJUnitForFunction(metadata, func, requirements);
+    const testCode = await generateJUnitForFunction(metadata, func, requirements, fileContent);
 
     testCases.push({
       id: '', // Will be set by store
@@ -35,7 +36,8 @@ export async function generateJUnitTests(
 async function generateJUnitForFunction(
   metadata: CodeMetadata,
   func: FunctionMetadata,
-  requirements?: Requirement[]
+  requirements?: Requirement[],
+  fileContent?: string
 ): Promise<string> {
   const model = await initAzureChatModel();
 
@@ -43,14 +45,18 @@ async function generateJUnitForFunction(
     ? func.parameters.map(p => `${p.type} ${p.name}`).join(', ')
     : 'no parameters';
 
-  // Read the actual source code to understand what the class/method does
+  // Use provided fileContent or read from file
   let sourceCodeSnippet = '';
-  try {
-    const fs = await import('fs/promises');
-    const fullSource = await fs.readFile(metadata.filePath, 'utf-8');
-    sourceCodeSnippet = fullSource;
-  } catch (e) {
-    // If we can't read the file, continue without it
+  if (fileContent) {
+    sourceCodeSnippet = fileContent;
+  } else {
+    try {
+      const fs = await import('fs/promises');
+      const fullSource = await fs.readFile(metadata.filePath, 'utf-8');
+      sourceCodeSnippet = fullSource;
+    } catch (e) {
+      // If we can't read the file, continue without it
+    }
   }
 
   const prompt = `You are an expert test engineer. Generate comprehensive JUnit 5 test cases for the following Java method.

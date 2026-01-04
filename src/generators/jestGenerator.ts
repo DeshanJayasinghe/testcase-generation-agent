@@ -6,12 +6,13 @@ import { initAzureChatModel } from '../config/initChatModel.js';
  */
 export async function generateJestTests(
   metadata: CodeMetadata,
-  requirements?: Requirement[]
+  requirements?: Requirement[],
+  fileContent?: string
 ): Promise<TestCase[]> {
   const testCases: TestCase[] = [];
 
   for (const func of metadata.functions) {
-    const testCode = await generateJestForFunction(metadata, func, requirements);
+    const testCode = await generateJestForFunction(metadata, func, requirements, fileContent);
 
     testCases.push({
       id: '', // Will be set by store
@@ -35,7 +36,8 @@ export async function generateJestTests(
 async function generateJestForFunction(
   metadata: CodeMetadata,
   func: FunctionMetadata,
-  requirements?: Requirement[]
+  requirements?: Requirement[],
+  fileContent?: string
 ): Promise<string> {
   const model = await initAzureChatModel();
 
@@ -44,17 +46,24 @@ async function generateJestForFunction(
     ? func.parameters.map(p => `${p.name}: ${p.type}`).join(', ')
     : 'no parameters';
 
-  // Read the actual source code to understand what the function does
+  // Use provided fileContent or read from file
   let sourceCodeSnippet = '';
-  try {
-    const fs = await import('fs/promises');
-    const fullSource = await fs.readFile(metadata.filePath, 'utf-8');
-    // Extract the function code
-    const lines = fullSource.split('\n');
+  if (fileContent) {
+    // Extract the function code from provided content
+    const lines = fileContent.split('\n');
     const funcLines = lines.slice(func.lineStart - 1, func.lineEnd);
     sourceCodeSnippet = funcLines.join('\n');
-  } catch (e) {
-    // If we can't read the file, continue without it
+  } else {
+    try {
+      const fs = await import('fs/promises');
+      const fullSource = await fs.readFile(metadata.filePath, 'utf-8');
+      // Extract the function code
+      const lines = fullSource.split('\n');
+      const funcLines = lines.slice(func.lineStart - 1, func.lineEnd);
+      sourceCodeSnippet = funcLines.join('\n');
+    } catch (e) {
+      // If we can't read the file, continue without it
+    }
   }
 
   const prompt = `You are an expert test engineer. Generate comprehensive Jest test cases for the following TypeScript function.

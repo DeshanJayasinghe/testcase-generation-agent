@@ -88,15 +88,16 @@ export async function createTestGeneratorAgent() {
 export async function generateTestsForFile(
   filePath: string,
   testType: "junit" | "jest",
-  requirements?: Requirement[]
+  requirements?: Requirement[],
+  fileContent?: string
 ): Promise<TestCase[]> {
-  const metadata = await parseCodeMetadata(filePath);
+  const metadata = await parseCodeMetadata(filePath, fileContent);
 
   let testCases: TestCase[];
   if (testType === "junit") {
-    testCases = await generateJUnitTests(metadata, requirements);
+    testCases = await generateJUnitTests(metadata, requirements, fileContent);
   } else {
-    testCases = await generateJestTests(metadata, requirements);
+    testCases = await generateJestTests(metadata, requirements, fileContent);
   }
 
   // Store all generated test cases

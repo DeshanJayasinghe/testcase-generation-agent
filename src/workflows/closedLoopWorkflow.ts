@@ -12,6 +12,7 @@ import { ablyService } from "../services/ablyService.js";
  */
 export interface WorkflowOptions {
   filePath: string;
+  fileContent?: string; // Optional file content (if files are in cloud storage)
   testType: "junit" | "jest";
   requirements?: Requirement[];
   autoApplyFixes?: boolean;
@@ -63,6 +64,7 @@ export async function runClosedLoopWorkflow(
 
   // Extract options with defaults (using different names to avoid conflict with function params)
   const filePath = options.filePath;
+  const fileContent = options.fileContent;
   const finalTestType = options.testType;
   const finalRequirements = options.requirements;
   const finalAutoApplyFixes = options.autoApplyFixes ?? false;
@@ -121,7 +123,7 @@ export async function runClosedLoopWorkflow(
       });
     }
 
-    const testCases = await generateTestsForFile(filePath, finalTestType, finalRequirements);
+    const testCases = await generateTestsForFile(filePath, finalTestType, finalRequirements, fileContent);
     state.testCases = testCases;
     console.log(`✅ Generated ${testCases.length} test cases\n`);
 
@@ -138,8 +140,13 @@ export async function runClosedLoopWorkflow(
           testCases: testCases.map(tc => ({
             id: tc.id,
             name: tc.name,
+            description: tc.description,
+            code: tc.code,
             type: tc.type,
             targetFunction: tc.targetFunction,
+            filePath: tc.filePath,
+            generatedAt: tc.generatedAt,
+            requirements: tc.requirements,
           })),
         },
       });

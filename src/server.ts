@@ -27,6 +27,7 @@ app.post('/workflow/start', async (req, res) => {
   try {
     const options: WorkflowOptions = {
       filePath: req.body.filePath,
+      fileContent: req.body.fileContent, // File content from cloud storage
       testType: req.body.testType || 'jest',
       requirements: req.body.requirements,
       autoApplyFixes: req.body.autoApplyFixes ?? true,
